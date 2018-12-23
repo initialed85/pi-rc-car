@@ -15,16 +15,10 @@ GPIO.setup(35, GPIO.OUT)
 GPIO.setup(32, GPIO.OUT)
 
 FREQ = 50.0
-IDLE_PERIOD = 0.0015
-MAX_PERIOD = 0.001
-MIN_PERIOD = 0.002
 
+MIN_DUTY = 5.0
 IDLE_DUTY = 7.5
 MAX_DUTY = 10.0
-MIN_DUTY = 5.0
-
-SOURCE_SCALE = abs(-1 - 1)
-DESTINATION_SCALE = abs(MIN_DUTY - MAX_DUTY)
 
 s = GPIO.PWM(35, FREQ)
 s.start(IDLE_DUTY)
@@ -54,7 +48,7 @@ class PS4Receiver(Thread):
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', 6291))
-        self.socket.settimeout(1)
+        self.socket.settimeout(0.2)  # twice the keepalive period
 
         self.stop_event = Event()
 
@@ -66,6 +60,11 @@ class PS4Receiver(Thread):
             try:
                 data, addr = self.socket.recvfrom(65536)
             except socket.timeout:
+                self.throttle.start(IDLE_DUTY)
+                continue
+
+            if data == 'KEEPALIVE':
+                time.sleep(0.01)
                 continue
 
             steering, brake, accelerator = eval(data)

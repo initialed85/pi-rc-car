@@ -24,6 +24,10 @@ class PS4Transmitter(object):
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
 
+    def send_keepalive_and_sleep(self):
+        self.socket.sendto('KEEPALIVE', (self.ip, 6291))
+        time.sleep(0.01)
+
     def listen(self):
         if not self.axis_data:
             self.axis_data = {}
@@ -50,7 +54,7 @@ class PS4Transmitter(object):
                     self.hat_data[event.hat] = event.value
 
                 if self.axis_data is None:
-                    time.sleep(0.01)
+                    self.send_keepalive_and_sleep()
                     continue
 
                 steering = self.axis_data.get(0)
@@ -58,7 +62,7 @@ class PS4Transmitter(object):
                 accelerator = self.axis_data.get(5)
 
                 if None in [steering, brake, accelerator]:
-                    time.sleep(0.01)
+                    self.send_keepalive_and_sleep()
                     continue
 
                 # steering deadzone
@@ -68,7 +72,7 @@ class PS4Transmitter(object):
                 state = [steering, brake, accelerator]
 
                 if state == self.state:
-                    time.sleep(0.01)
+                    self.send_keepalive_and_sleep()
                     continue
 
                 print '\t'.join([str(x) for x in state])
@@ -76,12 +80,12 @@ class PS4Transmitter(object):
                 try:
                     self.socket.sendto(repr(state), (self.ip, 6291))
                 except socket.error:
-                    pass
+                    self.send_keepalive_and_sleep()
 
                 self.state = state
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     from sys import argv
 
     ps4 = PS4Transmitter(argv[1])
