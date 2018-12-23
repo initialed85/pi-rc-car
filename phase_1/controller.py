@@ -1,6 +1,5 @@
 import socket
 import time
-from threading import RLock
 
 import pygame
 
@@ -18,8 +17,6 @@ class PS4Transmitter(object):
         self.button_data = None
         self.hat_data = None
         self.state = None
-
-        self.lock = RLock()
 
         pygame.init()
         pygame.joystick.init()
