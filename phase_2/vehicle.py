@@ -1,32 +1,30 @@
 import socket
+import sys
 import time
 from threading import Event, Thread
 
-try:
-    from RPi import GPIO
-except Exception:
+if sys.platform != 'linux2':
     from mock import MagicMock
 
-    GPIO = MagicMock()
+    pigpio = MagicMock()
+else:
+    import pigpio
 
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(35, GPIO.OUT)
-GPIO.setup(32, GPIO.OUT)
+pi = pigpio.pi()
 
-FREQ = 51.0
+FREQ = 50.0
 MIN_DUTY = 5
 IDLE_DUTY = 7.5
 MAX_DUTY = 10.0
 
-STEERING = 35
-THROTTLE = 32
+STEERING = 12
+THROTTLE = 19
 
-steering = GPIO.PWM(STEERING, FREQ)
-steering.start(IDLE_DUTY)
+pi.set_PWM_frequency(STEERING, FREQ)
+pi.set_PWM_dutycycle(STEERING, IDLE_DUTY)
 
-throttle = GPIO.PWM(THROTTLE, FREQ)
-throttle.start(IDLE_DUTY)
+pi.set_PWM_frequency(THROTTLE, FREQ)
+pi.set_PWM_dutycycle(THROTTLE, IDLE_DUTY)
 
 
 def combine_brake_and_accelerator(brake, accelerator):
@@ -41,6 +39,10 @@ def rescale(value):
     return 10.0 - (((value - -1.0) * (MAX_DUTY - MIN_DUTY)) / (1.0 - -1.0))
 
 
+def rescale_for_255(value):
+    return (value / 100.0) * 255.0
+
+
 class PS4Receiver(Thread):
     def __init__(self, throttle, steering):
         super(PS4Receiver, self).__init__()
@@ -50,12 +52,18 @@ class PS4Receiver(Thread):
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', 6291))
-        self.socket.settimeout(0.2)  # twice the keepalive period
+        self.socket.settimeout(0.2)
 
         self.stop_event = Event()
 
     def stop(self):
         self.stop_event.set()
+
+        pi.set_PWM_frequency(self.steering, 0)
+        pi.set_PWM_dutycycle(self.steering, 0)
+
+        pi.set_PWM_dutycycle(self.throttle, 0)
+        pi.set_PWM_frequency(self.throttle, 0)
 
     def run(self):
         last_state = None
@@ -63,16 +71,11 @@ class PS4Receiver(Thread):
         while not self.stop_event.is_set():
             try:
                 data, addr = self.socket.recvfrom(65536)
+                steering, brake, accelerator, handbrake = eval(data)
             except socket.timeout:
-                self.throttle.start(IDLE_DUTY)
-                continue
+                steering, brake, accelerator, handbrake = last_state[0], -1.0, -1.0, True
 
-            if data == 'KEEPALIVE':
-                continue
-
-            steering, brake, accelerator = eval(data)
-
-            state = [steering, brake, accelerator]
+            state = [steering, brake, accelerator, handbrake]
             if state == last_state:
                 continue
 
@@ -88,13 +91,15 @@ class PS4Receiver(Thread):
             brake_and_accelerator = combine_brake_and_accelerator(brake, accelerator)
             throttle_duty_cycle = rescale(brake_and_accelerator)
 
-            print [steering_duty_cycle, throttle_duty_cycle]
+            print '\t'.join([
+                str(x) for x in [steering_duty_cycle, throttle_duty_cycle, handbrake]
+            ])
 
-            self.steering.ChangeDutyCycle(steering_duty_cycle)
-            self.throttle.ChangeDutyCycle(throttle_duty_cycle)
+            pi.set_PWM_dutycycle(self.steering, rescale_for_255(steering_duty_cycle))
+            pi.set_PWM_dutycycle(self.throttle, rescale_for_255(throttle_duty_cycle))
 
 
-r = PS4Receiver(steering, throttle)
+r = PS4Receiver(STEERING, THROTTLE)
 r.start()
 
 while 1:

@@ -75,8 +75,6 @@ class PS4Transmitter(object):
                     self.send_keepalive_and_sleep()
                     continue
 
-                print '\t'.join([str(x) for x in state])
-
                 try:
                     self.socket.sendto(repr(state), (self.ip, 6291))
                 except socket.error:
