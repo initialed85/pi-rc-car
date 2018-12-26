@@ -60,8 +60,6 @@ To run the tests:
 
 ## Limitations
 
-The handbrake feature doesn't work- I haven't found a good way to statelessly lock the rear wheels.
+The handbrake feature still doesn't work (as per phase 2).
 
-If you're accelerating forwards, transitioning to full braking locks the wheels, but if you're reversing, transitioning to full throttle spins the wheels the other way.
-
-I've tried killing the PWM altogether in the hope it'll lock wheels but it doesn't seem to work.   
+The scripts `scheduler.py`, `publisher.py` and `subscriber.py` are untested and pretty lean- they shouldn't make an appearance in phase 4 (in favour of ROS).
