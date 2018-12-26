@@ -1,12 +1,10 @@
-# Phase 2 - Remote via IP (with better PWM)
+# Phase 3 - Better abstractions and testing
 
-The goal of phase 2 is to fix "servo chatter" issue that seems to be caused by an unreliable frequency output.
-
-Additionally, the handbrake button has been introduced but not yet implemented.
+The goal of phase 3 is to better abstract both sides (in preparation for ROS in phase 4) and to write some unit tests.
 
 ## Overview
 
-Phase 2 consists of the following:
+Phase 3 consists of the following:
 
 * Controller
     * Hardware
@@ -56,11 +54,9 @@ The vehicle script will output the duty cycles of steering and brake/throttle an
 
 ## Testing
 
-Tests? Where we're going we don't need tests!
+To run the tests:
 
-But in seriousness, you can run both scripts on your local machine and the Raspberry Pi library will be mocked out (permitting you to ensure the right values are coming through).
-
-I know, it's not great.
+    py.test -v
 
 ## Limitations
 
