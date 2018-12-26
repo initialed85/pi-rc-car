@@ -13,7 +13,7 @@ else:
 pi = pigpio.pi()
 
 FREQ = 50.0
-MIN_DUTY = 5
+MIN_DUTY = 5.0
 IDLE_DUTY = 7.5
 MAX_DUTY = 10.0
 
@@ -66,7 +66,7 @@ class PS4Receiver(Thread):
         pi.set_PWM_frequency(self.throttle, 0)
 
     def run(self):
-        last_state = None
+        last_state = -1.0, -1.0, -1.0, True
 
         while not self.stop_event.is_set():
             try:

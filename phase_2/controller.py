@@ -121,12 +121,12 @@ if __name__ == '__main__':
     t = Transmitter(
         ip=sys.argv[1],
         port=6291,
-        period=(1.0 / 50) / 2,
+        period=1.0 / 50,
     )
 
     c = Controller(
         transmitter=t,
-        period=(1.0 / 50) / 2,
+        period=1.0 / 50,
     )
 
     t.start()
