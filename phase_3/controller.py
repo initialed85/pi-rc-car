@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     p = Publisher(
         host=sys.argv[1],
-        port=6291,
+        port=13337,
     )
 
     s = Scheduler(period=DEBOUNCE_PERIOD)

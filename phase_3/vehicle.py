@@ -17,7 +17,7 @@ MIN_DUTY = 5.0
 IDLE_DUTY = 7.5
 MAX_DUTY = 10.0
 
-TIMEOUT = (1.0 / FREQUENCY) * 2
+TIMEOUT = (1.0 / FREQUENCY) * 10
 
 
 def convert_ps4_value_to_duty_cycle_percent(value):
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     v.start()
 
     s = Subscriber(
-        port=6291,
+        port=13337,
         timeout=TIMEOUT * 2,
     )
     s.start()
