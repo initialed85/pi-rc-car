@@ -14,7 +14,15 @@ class Tello(object):
         self.socket.sendto('command', (self.host, self.port))
         time.sleep(1)
         self.socket.sendto('streamon', (self.host, self.port))
-        time.sleep(1)
+
+        print 'ctrl + c to take off'
+
+        while 1:
+            try:
+                time.sleep(0.1)
+            except KeyboardInterrupt:
+                break
+
         self.socket.sendto('takeoff', (self.host, self.port))
 
     def send(self, state):
@@ -42,3 +50,6 @@ class Tello(object):
             )
         except socket.error:
             pass
+
+    def shutdown(self):
+        self.socket.sendto('land', (self.host, self.port))

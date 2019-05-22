@@ -1,3 +1,4 @@
+import datetime
 import sys
 from Queue import Queue, Empty
 from threading import Thread, Event
@@ -60,6 +61,10 @@ class Vehicle(Thread):
 
         self.state_queue = Queue()
 
+        self.record_state_history = False
+        self.play_state_history = False
+        self.state_history = []
+
     def set_pwm(self, gpio, frequency, duty):
         duty = convert_duty_cycle_percent_to_8_bit(duty)
 
@@ -81,11 +86,40 @@ class Vehicle(Thread):
                 'brake': -1.0,
                 'steering': last_state.get('steering') if last_state is not None else 0.0,
                 'accelerator': -1.0,
-                'handbrake': True,
+                'stop': False,
+                'record': False,
+                'play': False,
+                'timestamp': datetime.datetime.now(),
             }
 
     def iterate(self, last_state):
         state = self.handle_queue(last_state)
+        if state is not None:
+            stop = state.get('stop', False)
+            record = state.get('record', False)
+            play = state.get('play', False)
+
+            if stop and (self.record_state_history or self.play_state_history):
+                print '-- stopped'
+                self.record_state_history = False
+                self.play_state_history = False
+            elif record and not self.record_state_history:
+                print '-- recording'
+                self.record_state_history = True
+                self.state_history = []
+            elif play and not (self.record_state_history or self.play_state_history):
+                print '-- playing'
+                self.play_state_history = True
+
+        if self.record_state_history:
+            self.state_history += [state]
+        elif self.play_state_history:
+            try:
+                state = self.state_history.pop(0)
+            except IndexError:
+                print '-- finished'
+                self.play_state_history = False
+
         if state is None or None in state.values() or state == last_state:
             return last_state
 
@@ -105,10 +139,11 @@ class Vehicle(Thread):
             )
         )
 
-        handbrake = state['handbrake']
-
         print '\t'.join([
-            str(x) for x in [steering_duty_cycle, throttle_duty_cycle, handbrake]
+            str(x) for x in [
+                steering_duty_cycle,
+                throttle_duty_cycle,
+            ]
         ])
 
         self.set_pwm(self.steering_gpio, self.frequency, steering_duty_cycle)
@@ -134,24 +169,24 @@ if __name__ == '__main__':
     import time
     from subscriber import Subscriber
 
-    v = Vehicle(
+    vehicle = Vehicle(
         STEERING_GPIO,
         THROTTLE_GPIO,
         FREQUENCY,
         MIN_DUTY,
         IDLE_DUTY,
         MAX_DUTY,
-        TIMEOUT,
+        TIMEOUT
     )
-    v.start()
+    vehicle.start()
 
-    s = Subscriber(
+    subscriber = Subscriber(
         port=13337,
         timeout=TIMEOUT * 2,
     )
-    s.start()
+    subscriber.start()
 
-    s.set_receive_callback(v.add_state_event)
+    subscriber.set_receive_callback(vehicle.add_state_event)
 
     while 1:
         try:
@@ -159,8 +194,10 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             break
 
-    s.stop()
-    s.join()
+    subscriber.stop()
+    subscriber.join()
 
-    v.stop()
-    v.join()
+    print(repr(vehicle))
+
+    vehicle.stop()
+    vehicle.join()

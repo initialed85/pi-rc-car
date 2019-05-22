@@ -112,8 +112,6 @@ class Controller(object):
                 time.sleep(DEBOUNCE_PERIOD)
                 continue
 
-            # print '\t'.join([str(x) for x in state.values()])
-
             if self.state_change_callback is not None:
                 try:
                     self.state_change_callback(state)
@@ -154,6 +152,8 @@ if __name__ == '__main__':
         c.loop()
     except KeyboardInterrupt:
         pass
+
+    t.shutdown()
 
     s.stop()
     s.join()

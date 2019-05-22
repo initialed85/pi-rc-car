@@ -36,6 +36,8 @@ class Scheduler(Thread):
             started = datetime.datetime.now()
             planned_stop = started + timedelta
 
+            print self.state
+
             if self.iteration_callback is not None:
                 with self.lock:
                     self.iteration_callback(self.state)

@@ -129,7 +129,7 @@ class ControllerTest(unittest.TestCase):
         self.assert_(hat_data == _TEST_HAT_DATA)
 
     def test_get_state(self):
-        state = self.subject.get_state(_TEST_AXIS_DATA, _TEST_BUTTON_DATA, _TEST_HAT_DATA)
+        state = self.subject.build_state(_TEST_AXIS_DATA, _TEST_BUTTON_DATA, _TEST_HAT_DATA)
 
         self.assert_(state == _TEST_STATE)
 

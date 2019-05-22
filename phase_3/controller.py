@@ -52,22 +52,37 @@ class Controller(object):
         return axis_data, button_data, hat_data
 
     @staticmethod
-    def get_state(axis_data, button_data, hat_data):
+    def build_state(axis_data, button_data, hat_data):
         steering = axis_data.get(0)
         brake = axis_data.get(4)
         accelerator = axis_data.get(5)
-        handbrake = button_data.get(1)
+        stop = button_data.get(0)
+        turbo = button_data.get(1)
+        record = button_data.get(2)
+        play = button_data.get(3)
 
         # create steering deadzone
         if steering is not None and -0.04 <= steering <= 0.04:
             steering = 0.0
 
-        return {
+        if brake is not None and not turbo:
+            brake_range = 0.5883
+            brake = (brake * (brake_range / 2)) - (1 - (brake_range / 2))
+
+        if accelerator is not None and not turbo:
+            accelerator_range = 0.0393
+            accelerator = (accelerator * (accelerator_range / 2)) - (1 - (accelerator_range / 2))
+
+        state = {
             'steering': steering,
             'brake': brake,
             'accelerator': accelerator,
-            'handbrake': handbrake,
+            'stop': stop,
+            'record': record,
+            'play': play,
         }
+
+        return state
 
     def iterate(self, axis_data, button_data, hat_data, last_state):
         for event in pygame.event.get():
@@ -76,7 +91,7 @@ class Controller(object):
                 time.sleep(DEBOUNCE_PERIOD)
                 continue
 
-            state = self.get_state(axis_data, button_data, hat_data)
+            state = self.build_state(axis_data, button_data, hat_data)
             if None in state:
                 time.sleep(DEBOUNCE_PERIOD)
                 continue
@@ -84,8 +99,6 @@ class Controller(object):
             if state == last_state:
                 time.sleep(DEBOUNCE_PERIOD)
                 continue
-
-            print '\t'.join([str(x) for x in state.values()])
 
             if self.state_change_callback is not None:
                 try:
